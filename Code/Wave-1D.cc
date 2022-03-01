@@ -7,7 +7,6 @@
  * ---------------------------------------------------------------------
  */
 
-
 // Libraries for constructing the geometry/grids
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/grid_generator.h>
