@@ -1,0 +1,15 @@
+\section{Background}
+Let $\Omega$ be a region of the $n$th-dimentional real set. The region $\Omega$ will be considered a continuous mass; therefore, a point in $\Omega$ will be considered a mass particle Not to confuse it with an actual physical particle like in quantum physics but rather as just a point with mass. Let $\mathbf{X}$ be the coordinates of point in $\Omega$. These coordinates do not change based on time; they are the coordinates of the point at an initial time which will be given the name \textit{material coordinates}. As the mass particle moves away from those initial coordinates for a certain amount of time $t$, the mapping $\varphi_t(\mathbf{X})$ will give the new coordinates of the mass particle, or \textit{spatial coordinates}, $\mathbf{x}$. As time progresses, the view of the movement is viewed from the reference of the material cooridinates. This is known as the \textit{Lagrangian reference frame}.
+
+After a given time $t$, a displacement field can be produced of all particles in the region
+\begin{equation}
+  \mathbf{u}(\mathbf{X},t) = \mathbf{x}(\mathbf{X},t) - \mathbf{X}.
+\end{equation}
+A derivative with respect to the material coordinates gives the \textit{displacement gradient}
+\begin{equation}
+  \frac{\partial \mathbf{u}}{\partial \mathbf{X}} = \frac{\partial \mathbf{x}}{\partial \mathbf{X}} - \mathbf{I},
+\end{equation}
+but a simple rearrangement also produces the \textit{deformation gradient tensor}
+\begin{equation}
+  \mathbf{F} = \frac{\partial \mathbf{x}}{\partial \mathbf{X}} = \frac{\partial \mathbf{u}}{\partial \mathbf{X}} + \mathbf{I}.
+\end{equation}
