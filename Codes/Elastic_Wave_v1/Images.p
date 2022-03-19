@@ -1,4 +1,4 @@
-# Plot 1
+# Plot 
 style1 = "lines lt 4 lw 2"
 style2 = "lines lt 3 lw 2"
 

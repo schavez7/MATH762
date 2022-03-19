@@ -25,16 +25,16 @@
 #include <deal.II/numerics/matrix_tools.h>
 #include <deal.II/base/utilities.h>
 
-namespace Step23
+namespace Step100
 {
   using namespace dealii;
 
 
   template <int dim>
-  class WaveEquation
+  class ElasticWaveEquation
   {
   public:
-    WaveEquation();
+    ElasticWaveEquation();
     void run();
 
   private:
@@ -179,7 +179,7 @@ namespace Step23
 
   /* ----------------------- WaveEquation Constructor------------------------ */
   template <int dim>
-  WaveEquation<dim>::WaveEquation()
+  ElasticWaveEquation<dim>::ElasticWaveEquation()
     : fe(1)
     , dof_handler(triangulation)
     , time_step(1. / 64)
@@ -191,7 +191,7 @@ namespace Step23
 
   /* ---------------------------- Setup System ------------------------------ */
   template <int dim>
-  void WaveEquation<dim>::setup_system()
+  void ElasticWaveEquation<dim>::setup_system()
   {
     if (dim == 1) {
       const double left  = -1.0;
@@ -274,7 +274,7 @@ namespace Step23
   // is not much of a loss either, but let's keep it simple and just do
   // without:
   template <int dim>
-  void WaveEquation<dim>::solve_u()
+  void ElasticWaveEquation<dim>::solve_u()
   {
     SolverControl            solver_control(1000, 1e-8 * system_rhs.l2_norm());
     SolverCG<Vector<double>> cg(solver_control);
@@ -288,7 +288,7 @@ namespace Step23
 
   /* ------------------------------ Solve V --------------------------------- */
   template <int dim>
-  void WaveEquation<dim>::solve_v()
+  void ElasticWaveEquation<dim>::solve_v()
   {
     SolverControl            solver_control(1000, 1e-8 * system_rhs.l2_norm());
     SolverCG<Vector<double>> cg(solver_control);
@@ -303,7 +303,7 @@ namespace Step23
 
   /* --------------------------- Output Results ----------------------------- */
   template <int dim>
-  void WaveEquation<dim>::output_results() const
+  void ElasticWaveEquation<dim>::output_results() const
   {
     DataOut<dim> data_out;
 
@@ -339,7 +339,7 @@ namespace Step23
 
   /* -------------------------------- Run ----------------------------------- */
   template <int dim>
-  void WaveEquation<dim>::run()
+  void ElasticWaveEquation<dim>::run()
   {
     system("mkdir data");
     setup_system();
@@ -492,17 +492,17 @@ namespace Step23
         old_solution_v = solution_v;
       }
   }
-} // namespace Step23
+} // namespace Step100
 
 
 int main()
 {
   try
     {
-      using namespace Step23;
+      using namespace Step100;
 
-      WaveEquation<1> wave_equation_solver;
-      wave_equation_solver.run();
+      ElasticWaveEquation<1> elastic_wave_equation_solver;
+      elastic_wave_equation_solver.run();
     }
   catch (std::exception &exc)
     {
