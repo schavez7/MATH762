@@ -313,18 +313,26 @@ namespace Step23
 
     data_out.build_patches();
 
-    const std::string filename =
-      "solution-" + Utilities::int_to_string(timestep_number, 3) + ".vtu";
     // Like step-15, since we write output at every time step (and the system
     // we have to solve is relatively easy), we instruct DataOut to use the
     // zlib compression algorithm that is optimized for speed instead of disk
     // usage since otherwise plotting the output becomes a bottleneck:
-    DataOutBase::VtkFlags vtk_flags;
-    vtk_flags.compression_level =
-      DataOutBase::VtkFlags::ZlibCompressionLevel::best_speed;
-    data_out.set_flags(vtk_flags);
-    std::ofstream output(filename);
-    data_out.write_vtu(output);
+    if (dim == 1) {
+      const std::string filename =
+        "data/solution-" + Utilities::int_to_string(timestep_number, 3) + ".gnuplot";
+      std::ofstream output(filename);
+      data_out.write_gnuplot(output);
+    }
+    if (dim == 2) {
+      const std::string filename =
+        "solution-" + Utilities::int_to_string(timestep_number, 3) + ".vtu";
+      DataOutBase::VtkFlags vtk_flags;
+      vtk_flags.compression_level =
+        DataOutBase::VtkFlags::ZlibCompressionLevel::best_speed;
+      data_out.set_flags(vtk_flags);
+      std::ofstream output(filename);
+      data_out.write_vtu(output);
+    }
   }
 
 
@@ -333,6 +341,7 @@ namespace Step23
   template <int dim>
   void WaveEquation<dim>::run()
   {
+    system("mkdir data");
     setup_system();
 
     VectorTools::project(dof_handler,
@@ -361,7 +370,7 @@ namespace Step23
     Vector<double> tmp(solution_u.size());
     Vector<double> forcing_terms(solution_u.size());
 
-    for (; time <= 1.5; time += time_step, ++timestep_number)
+    for (; time <= 2.5; time += time_step, ++timestep_number)
       {
         std::cout << "Time step " << timestep_number << " at t=" << time
                   << std::endl;
