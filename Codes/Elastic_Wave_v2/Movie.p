@@ -30,7 +30,8 @@ style2 = "lines lt 3 lw 2"
 
 system('mkdir -p animation')
 
-do for [i=1:10]{
+# Makes the png files ready for the movie
+do for [i=1:N]{
   filename = sprintf('data/solution-%03d.gnuplot',i)
   set terminal pngcairo dashed enhanced
   outfile = sprintf('animation/solution-%03d.png',i)
@@ -42,3 +43,7 @@ do for [i=1:10]{
   plot filename @range2 with @style2
   unset multiplot
   reread}
+
+#--- Makes movie ---#
+# Combines the pngs into a movie
+system('ffmpeg -i animation/solution-%03d.png animation.mpeg')
