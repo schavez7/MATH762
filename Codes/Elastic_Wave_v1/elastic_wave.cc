@@ -1,3 +1,8 @@
+/* We will no try to implement a simple 1D elastic model:
+              \rho u_tt - E u_xx = \rho q_0
+   where u is the displacemnt, \rho is a constant density,
+   E is Young's modulus, and q_0 is some constant forcing term.
+*/
 #include <deal.II/base/quadrature_lib.h>
 #include <deal.II/base/function.h>
 
@@ -63,6 +68,10 @@ namespace Step100
     double       time;
     unsigned int timestep_number;
     const double theta;
+
+    double YoungsModulus;
+    double density;
+    double c;
   };
 
 
@@ -186,6 +195,9 @@ namespace Step100
     , time(time_step)
     , timestep_number(1)
     , theta(0.5)
+    , YoungsModulus(2000) /* Pascals */
+    , density(1000)       /* kg/m^3 */
+    , csquared(YoungsModulus/density) /* speed of wave propagation squared */
   {}
 
 
@@ -381,7 +393,7 @@ namespace Step100
         system_rhs.add(time_step, tmp);
 
         laplace_matrix.vmult(tmp, old_solution_u);
-        system_rhs.add(-theta * (1 - theta) * time_step * time_step, tmp);
+        system_rhs.add(-theta * (1 - theta) * time_step * time_step * csquared, tmp);
 
         RightHandSide<dim> rhs_function;
         rhs_function.set_time(time);
@@ -428,7 +440,7 @@ namespace Step100
           // actually apply boundary data. The actual content is very simple:
           // it is the sum of the mass matrix and a weighted Laplace matrix:
           matrix_u.copy_from(mass_matrix);
-          matrix_u.add(theta * theta * time_step * time_step, laplace_matrix);
+          matrix_u.add(theta * theta * time_step * time_step * csquared, laplace_matrix);
           MatrixTools::apply_boundary_values(boundary_values,
                                              matrix_u,
                                              solution_u,
@@ -445,7 +457,7 @@ namespace Step100
         // are applied in the same way as before, except that now we have to
         // use the BoundaryValuesV class:
         laplace_matrix.vmult(system_rhs, solution_u);
-        system_rhs *= -theta * time_step;
+        system_rhs *= -theta * time_step * csquared;
 
         mass_matrix.vmult(tmp, old_solution_v);
         system_rhs += tmp;
