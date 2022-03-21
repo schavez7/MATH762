@@ -76,7 +76,43 @@ namespace Step100
   };
 
 
-  /* -------------------------- Initial Values U ---------------------------- */
+  /* ------------------------- Elasticity Tensor ----------------------------
+  template <int dim>
+  class Elastic_Coefficient : public Function<dim>
+  {
+  public:
+    Elastici_Coefficient(const unsigned int i_component = 0,
+                         const unsigned int j_component = 0,
+                         const double lambda = 1.,
+                         const double mu     = 1000)
+      : Function<dim>(i_component, j_component, lambda, mu)
+    {}
+
+    virtual double value(const Point<dim> &p,
+                         const unsigned int component = 0) const override
+    {
+      switch (dim)
+        {
+          case 1:
+            {
+              return lambda + 2*mu;
+            }
+
+          case 2:
+            {
+              const double theta  = numbers::PI / 4.;
+              return theta;
+            }
+
+          default:
+            Assert(false, ExcNotImplemented());
+            return lambda + 2*mu;
+        }
+    }
+  };
+
+
+   -------------------------- Initial Values U ---------------------------- */
   template <int dim>
   class InitialValuesU : public Function<dim>
   {
@@ -513,7 +549,7 @@ int main()
     {
       using namespace Step100;
 
-      ElasticWaveEquation<2> elastic_wave_equation_solver;
+      ElasticWaveEquation<1> elastic_wave_equation_solver;
       elastic_wave_equation_solver.run();
     }
   catch (std::exception &exc)
