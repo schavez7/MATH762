@@ -76,43 +76,36 @@ namespace Step100
   };
 
 
-  /* ------------------------- Elasticity Tensor ----------------------------
+  /* ------------------------- Elasticity Tensor ----------------------------*/
   template <int dim>
-  class Elastic_Coefficient : public Function<dim>
+  class ElasticityMatrix : FullMatrix<double>
   {
   public:
-    Elastici_Coefficient(const unsigned int i_component = 0,
-                         const unsigned int j_component = 0,
-                         const double lambda = 1.,
-                         const double mu     = 1000)
-      : Function<dim>(i_component, j_component, lambda, mu)
+    ElasticityMatrix(const unsigned int n = dim, const unsigned int m = dim)
+      : FullMatrix<double>(n,m)
     {}
 
-    virtual double value(const Point<dim> &p,
-                         const unsigned int component = 0) const override
+    double lambda;
+    double mu;
+    void get_parameters(const double p1, const double p2)
     {
-      switch (dim)
-        {
-          case 1:
-            {
-              return lambda + 2*mu;
-            }
+      lambda = p1;
+      mu = p2;
+    }
 
-          case 2:
-            {
-              const double theta  = numbers::PI / 4.;
-              return theta;
-            }
-
-          default:
-            Assert(false, ExcNotImplemented());
-            return lambda + 2*mu;
-        }
+    double value(const unsigned int i_component, const unsigned int j_component) const
+    {
+      if (i_component == j_component)
+      {
+        return lambda;
+      } else {
+        return lambda + 2 * mu;
+      }
     }
   };
 
 
-   -------------------------- Initial Values U ---------------------------- */
+  /* -------------------------- Initial Values U ---------------------------- */
   template <int dim>
   class InitialValuesU : public Function<dim>
   {
