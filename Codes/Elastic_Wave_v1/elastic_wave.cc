@@ -1,11 +1,11 @@
 /*                            2D Wave equation                                */
 
-/* These will be preseneted in order of appearance */
 // Must create triangulation and a grid
 #include <deal.II/grid/tria.h>
 #include <deal.II/grid/grid_generator.h>
 // DoF handler and finite elements
 #include <deal.II/dofs/dof_handler.h>
+#include <deal.II/fe/fe_system.h>
 #include <deal.II/fe/fe_q.h>
 // Want to show how grid or data looks like
 #include <deal.II/grid/grid_out.h>
@@ -128,7 +128,8 @@ private:
 
   Triangulation<dim>        triangulation;
   DoFHandler<dim>           dof_handler;
-  FE_Q<dim>                 fe;
+  FESystem<dim>             fe;
+  // FE_Q<dim>                 fe;
   const unsigned int        n_refinements;
 
   DynamicSparsityPattern    dynamic_sparsity_pattern;
@@ -159,20 +160,20 @@ private:
   const double              c;
   const double              k;
   const unsigned int        timesteps;
-
-  // SolverControl             solver_control;
-  // SolverCG<Vector<double>>  solver;
 };
 
 /*------------------------------ Constructor ---------------------------------*/
 template <int dim>
 ElasticWaveEquation<dim>::ElasticWaveEquation()
 : dof_handler(triangulation)
-, fe(1) /* For now let's do degree 2 polynomials */
+// , fe(1) /* For now let's do degree 2 polynomials */
+// , fe(FE_Q<dim>(2),dim)
+, fe(FE_Q<dim>(2))
 , n_refinements(5)
 , c(1.0)
-, k(1.0/(2.0*c*std::pow(2.0,n_refinements+1.0)))   // k < h/c < h^(n_refine + 1)
-, timesteps(30)
+// , k(1.0/(2.0*c*std::pow(2.0,n_refinements+1.0)))   // k < h/c = 2^(n_refine + 1)/c
+, k(0.01)
+, timesteps(50)
 {}
 
 /*----------------------------- Creates Grid ---------------------------------*/
@@ -182,7 +183,7 @@ void ElasticWaveEquation<dim>::create_grid()
 {
   GridGenerator::hyper_cube(triangulation,
                             0.,
-                            numbers::PI,
+                            2*numbers::PI,
                             false);
   triangulation.refine_global(n_refinements);
 }
@@ -207,15 +208,13 @@ void ElasticWaveEquation<dim>::create_grid_out(const unsigned int n)
 template <int dim>
 void ElasticWaveEquation<dim>::initialise_system()
 {
-  // Need this to know the which nodes can very and how many.
+  // Need this to know which nodes have how many degrees of freedom
   dof_handler.distribute_dofs(fe);
   // Using the above information, a system matrix can be produced of the right size.
   dynamic_sparsity_pattern.reinit(dof_handler.n_dofs(),dof_handler.n_dofs());
   DoFTools::make_sparsity_pattern(dof_handler, dynamic_sparsity_pattern);
   sparsity_pattern.copy_from(dynamic_sparsity_pattern);
-  // Add hanging nodes
-  // DoFTools::make_hanging_node_constraints(dof_handler,
-  //                                        constraints);
+
   constraints.close();
 
   // Initialises solution for u and v
@@ -232,7 +231,8 @@ void ElasticWaveEquation<dim>::initialise_system()
                        ExactSolutionDerivative<dim>(),
                        Solution_v);
 
-  // Plots the initial solution
+  // Creates a folder for data and plots the initial solution
+  system("mkdir Solution");
   graph(0);
 }
 
@@ -244,8 +244,6 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   // Quadrature used
   QGauss<dim> quadrature(fe.degree + 1);
 
-  // Creates a folder for data (weird place for it but its the best for now)
-  system("mkdir Solution");
   for (unsigned int i = 1; i < timesteps; i++)
   {
   // Initialises the Mass and Laplace matrices
@@ -269,7 +267,8 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   VectorTools::create_right_hand_side(dof_handler,
                                       QGauss<dim>(fe.degree + 1),
                                       ForcingFunction<dim>(),
-                                      F_new);
+                                      F_new,
+                                      constraints);
   // Vector used to construct the rhs and Matrix used to construct lhs
   RHS_u.reinit(dof_handler.n_dofs());
   RHS_v.reinit(dof_handler.n_dofs());
@@ -292,13 +291,13 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   LHS_Matrix_u.add(k*k/4.0,LaplaceMatrix);
 
   // Apply boundary conditions for u
-  Boundary<dim> boundary_values_u_function;
-  std::map<types::global_dof_index, double> boundary_values;
+  Boundary<dim> Boundary_u;
+  std::map<types::global_dof_index, double> Boundary_values;
   VectorTools::interpolate_boundary_values(dof_handler,
                                            0,
-                                           boundary_values_u_function,
-                                           boundary_values);
-  MatrixTools::apply_boundary_values(boundary_values,
+                                           Boundary_u,
+                                           Boundary_values);
+  MatrixTools::apply_boundary_values(Boundary_values,
                                      LHS_Matrix_u,
                                      Solution_u,
                                      RHS_u);
@@ -322,15 +321,14 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   RHS_v.add(-k/2.0,RHS_v_Temp1,-k/2.0,Solution_u_old);
   RHS_v.add(k/2.0,F_new,k/2.0,F_current);
 
-  // Apply boundary conditions
-  BoundaryDerivative<dim> boundary_values_v_function;
-  // std::map<types::global_dof_index, double> boundary_values;
-  boundary_values.clear();
+  // Apply boundary conditions for du/dt
+  BoundaryDerivative<dim> Boundary_v;
+  Boundary_values.clear();
   VectorTools::interpolate_boundary_values(dof_handler,
                                            0,
-                                           boundary_values_v_function,
-                                           boundary_values);
-  MatrixTools::apply_boundary_values(boundary_values,
+                                           Boundary_v,
+                                           Boundary_values);
+  MatrixTools::apply_boundary_values(Boundary_values,
                                      LHS_Matrix_v,
                                      Solution_v,
                                      RHS_v);
@@ -345,6 +343,7 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   } // end the forloop
 }
 
+/*--------------------------------- Graph ------------------------------------*/
 template <int dim>
 void ElasticWaveEquation<dim>::graph(const unsigned int time_step)
 {
