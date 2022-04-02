@@ -39,11 +39,15 @@ template <int dim>
 class ForcingFunction : public Function<dim>
 {
   public:
+    ForcingFunction(const unsigned int n_components = 1, const double time = 0.)
+      : Function<dim>(n_components, time) {}
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
+      const double t = this->get_time();
       (void)component;
-      return 2.0 * std::sin(p[0]) * std::sin(p[1]);
+      // return std::sin(p[0]) * std::sin(p[1]);
+      return std::sin(p[0]) * std::sin(p[1]) * std::sin(t);
     }
 };
 
@@ -54,11 +58,15 @@ template <int dim>
 class ExactSolution : public Function<dim>
 {
   public:
+    ExactSolution(const unsigned int n_components = 1, const double time = 0.)
+      : Function<dim>(n_components, time) {}
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
+      const double t = this->get_time();
       (void)component;
-      return std::sin(p[0]) * std::sin(p[1]);
+      // return std::sin(p[0]) * std::sin(p[1]);
+      return std::sin(p[0]) * std::sin(p[1]) * std::sin(t);
     }
 };
 
@@ -69,12 +77,16 @@ template <int dim>
 class ExactSolutionDerivative : public Function<dim>
 {
   public:
+    // ExactSolutionDerivative(const unsigned int n_components = 1, const double time = 0.)
+    //   : Function<dim>(n_components, time) {}
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
+      // const double t = this->get_time();
       (void)component;
       (void)p;
-      return 0.0;
+      // return std::sin(p[0]) * std::sin(p[1]) * std::cos(t);
+      return std::sin(p[0]) * std::sin(p[1]);
     }
 };
 
@@ -85,6 +97,8 @@ template <int dim>
 class Boundary : public Function<dim>
 {
   public:
+    Boundary(const unsigned int n_components = 1, const double time = 0.)
+      : Function<dim>(n_components, time) {}
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
@@ -101,6 +115,8 @@ template <int dim>
 class BoundaryDerivative : public Function<dim>
 {
   public:
+    BoundaryDerivative(const unsigned int n_components = 1, const double time = 0.)
+      : Function<dim>(n_components, time) {}
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
@@ -155,9 +171,9 @@ private:
   Vector<double>            RHS_u_Temp2;
   Vector<double>            RHS_v_Temp2;
   Vector<double>            Solution_u_old;
-  Vector<double>            Solution_v_old;
+  // Vector<double>            Solution_v_old;
 
-  const double              c;
+  const double              csquared;
   const double              k;
   const unsigned int        timesteps;
 };
@@ -166,14 +182,12 @@ private:
 template <int dim>
 ElasticWaveEquation<dim>::ElasticWaveEquation()
 : dof_handler(triangulation)
-// , fe(1) /* For now let's do degree 2 polynomials */
-// , fe(FE_Q<dim>(2),dim)
 , fe(FE_Q<dim>(2))
 , n_refinements(5)
-, c(1.0)
-// , k(1.0/(2.0*c*std::pow(2.0,n_refinements+1.0)))   // k < h/c = 2^(n_refine + 1)/c
-, k(0.01)
-, timesteps(50)
+, csquared(1.0)
+, k(1.0/(2.0*csquared*std::pow(2.0,n_refinements+1.0)))   // k < h/c = 2^(n_refine + 1)/c
+// , k(0.01)
+, timesteps(100)
 {}
 
 /*----------------------------- Creates Grid ---------------------------------*/
@@ -259,14 +273,17 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   // Initialise: F(n) is F_new and F(n-1) is F_current
   F_current.reinit(dof_handler.n_dofs());
   F_new.reinit(dof_handler.n_dofs());
+  ForcingFunction<dim> f;
+  f.set_time((i-1)*k);
   VectorTools::create_right_hand_side(dof_handler,
                                       QGauss<dim>(fe.degree + 1),
-                                      ForcingFunction<dim>(),
+                                      f,
                                       F_current,
                                       constraints);
+  f.set_time(i*k);
   VectorTools::create_right_hand_side(dof_handler,
                                       QGauss<dim>(fe.degree + 1),
-                                      ForcingFunction<dim>(),
+                                      f,
                                       F_new,
                                       constraints);
   // Vector used to construct the rhs and Matrix used to construct lhs
@@ -283,12 +300,12 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   MassMatrix.vmult(RHS_u,Solution_u);
   LaplaceMatrix.vmult(RHS_u_Temp1,Solution_u);
   MassMatrix.vmult(RHS_u_Temp2,Solution_v);
-  RHS_u.add(-k*k/4.0,RHS_u_Temp1,k,RHS_u_Temp2);
+  RHS_u.add(-csquared*k*k/4.0,RHS_u_Temp1,k,RHS_u_Temp2);
   RHS_u.add(k*k/4.0,F_new,k*k/4.0,F_current);
 
   // Constructing the left hand side matrix
   LHS_Matrix_u.copy_from(MassMatrix);
-  LHS_Matrix_u.add(k*k/4.0,LaplaceMatrix);
+  LHS_Matrix_u.add(csquared*k*k/4.0,LaplaceMatrix);
 
   // Apply boundary conditions for u
   Boundary<dim> Boundary_u;
@@ -305,6 +322,8 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   // Solve for u(n) solution first
   SolverControl solver_control(1000, 1e-8 * RHS_u.l2_norm());
   SolverCG<Vector<double>> solver(solver_control);
+  //-------- here maybe
+
   Solution_u_old = Solution_u;
   Solution_u = 0;
   solver.solve(LHS_Matrix_u,
@@ -318,7 +337,7 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   MassMatrix.vmult(RHS_v,Solution_v);
   LaplaceMatrix.vmult(RHS_v_Temp1,Solution_u);
   LaplaceMatrix.vmult(RHS_v_Temp2,Solution_u_old);
-  RHS_v.add(-k/2.0,RHS_v_Temp1,-k/2.0,Solution_u_old);
+  RHS_v.add(-csquared*k/2.0,RHS_v_Temp1,-csquared*k/2.0,Solution_u_old);
   RHS_v.add(k/2.0,F_new,k/2.0,F_current);
 
   // Apply boundary conditions for du/dt
@@ -334,7 +353,7 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
                                      RHS_v);
 
   // Now solve for v(n)
-  Solution_v_old = Solution_v;
+  // Solution_v_old = Solution_v;
   Solution_v = 0;
   solver.solve(MassMatrix,
                Solution_v,
