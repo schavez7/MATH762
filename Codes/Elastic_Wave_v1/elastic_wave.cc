@@ -77,16 +77,16 @@ template <int dim>
 class ExactSolutionDerivative : public Function<dim>
 {
   public:
-    // ExactSolutionDerivative(const unsigned int n_components = 1, const double time = 0.)
-    //   : Function<dim>(n_components, time) {}
+    ExactSolutionDerivative(const unsigned int n_components = 1, const double time = 0.)
+      : Function<dim>(n_components, time) {}
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
-      // const double t = this->get_time();
+      const double t = this->get_time();
       (void)component;
       (void)p;
-      // return std::sin(p[0]) * std::sin(p[1]) * std::cos(t);
-      return std::sin(p[0]) * std::sin(p[1]);
+      return std::sin(p[0]) * std::sin(p[1]) * std::cos(t);
+      // return std::sin(p[0]) * std::sin(p[1]);
     }
 };
 
@@ -185,8 +185,8 @@ ElasticWaveEquation<dim>::ElasticWaveEquation()
 , fe(FE_Q<dim>(2))
 , n_refinements(5)
 , csquared(1.0)
-, k(1.0/(2.0*csquared*std::pow(2.0,n_refinements+1.0)))   // k < h/c = 2^(n_refine + 1)/c
-// , k(0.01)
+// , k(1.0/(2.0*csquared*std::pow(2.0,n_refinements+1.0)))   // k < h/c = 2^(n_refine + 1)/c
+, k(1.0/64.0)
 , timesteps(100)
 {}
 
@@ -197,7 +197,7 @@ void ElasticWaveEquation<dim>::create_grid()
 {
   GridGenerator::hyper_cube(triangulation,
                             0.,
-                            2*numbers::PI,
+                            2.0*numbers::PI,
                             false);
   triangulation.refine_global(n_refinements);
 }
@@ -239,10 +239,12 @@ void ElasticWaveEquation<dim>::initialise_system()
                        QGauss<dim>(fe.degree + 1),
                        ExactSolution<dim>(),
                        Solution_u);
+  ExactSolutionDerivative<dim> ESD;
+  ESD.set_time(0.);
   VectorTools::project(dof_handler,
                        constraints,
                        QGauss<dim>(fe.degree + 1),
-                       ExactSolutionDerivative<dim>(),
+                       ESD,
                        Solution_v);
 
   // Creates a folder for data and plots the initial solution
@@ -258,6 +260,7 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   // Quadrature used
   QGauss<dim> quadrature(fe.degree + 1);
 
+  // for (unsigned int i = 1; i < timesteps; i++)
   for (unsigned int i = 1; i < timesteps; i++)
   {
   // Initialises the Mass and Laplace matrices
@@ -278,14 +281,14 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   VectorTools::create_right_hand_side(dof_handler,
                                       QGauss<dim>(fe.degree + 1),
                                       f,
-                                      F_current,
-                                      constraints);
+                                      F_current);//,
+                                      // constraints);
   f.set_time(i*k);
   VectorTools::create_right_hand_side(dof_handler,
                                       QGauss<dim>(fe.degree + 1),
                                       f,
-                                      F_new,
-                                      constraints);
+                                      F_new);//,
+                                      // constraints);
   // Vector used to construct the rhs and Matrix used to construct lhs
   RHS_u.reinit(dof_handler.n_dofs());
   RHS_v.reinit(dof_handler.n_dofs());
@@ -314,6 +317,7 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
                                            0,
                                            Boundary_u,
                                            Boundary_values);
+  Solution_u_old = Solution_u;
   MatrixTools::apply_boundary_values(Boundary_values,
                                      LHS_Matrix_u,
                                      Solution_u,
@@ -322,10 +326,8 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   // Solve for u(n) solution first
   SolverControl solver_control(1000, 1e-8 * RHS_u.l2_norm());
   SolverCG<Vector<double>> solver(solver_control);
-  //-------- here maybe
 
-  Solution_u_old = Solution_u;
-  Solution_u = 0;
+  // Solution_u = 0;
   solver.solve(LHS_Matrix_u,
                Solution_u,
                RHS_u,
@@ -354,7 +356,7 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
 
   // Now solve for v(n)
   // Solution_v_old = Solution_v;
-  Solution_v = 0;
+  // Solution_v = 0;
   solver.solve(MassMatrix,
                Solution_v,
                RHS_v,
