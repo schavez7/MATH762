@@ -44,9 +44,8 @@ class ForcingFunction : public Function<dim>
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
-      const double t = this->get_time();
+      double t = this->get_time();
       (void)component;
-      // return std::sin(p[0]) * std::sin(p[1]);
       return std::sin(p[0]) * std::sin(p[1]) * std::sin(t);
     }
 };
@@ -63,10 +62,10 @@ class ExactSolution : public Function<dim>
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
-      const double t = this->get_time();
+      // double t = this->get_time();
+      (void)p;
       (void)component;
-      // return std::sin(p[0]) * std::sin(p[1]);
-      return std::sin(p[0]) * std::sin(p[1]) * std::sin(t);
+      return 0.0;
     }
 };
 
@@ -82,11 +81,11 @@ class ExactSolutionDerivative : public Function<dim>
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
-      const double t = this->get_time();
+      // double t = this->get_time();
       (void)component;
       (void)p;
-      return std::sin(p[0]) * std::sin(p[1]) * std::cos(t);
-      // return std::sin(p[0]) * std::sin(p[1]);
+      // return std::sin(p[0]) * std::sin(p[1]) * std::cos(t);
+      return std::sin(p[0]) * std::sin(p[1]);
     }
 };
 
@@ -145,7 +144,6 @@ private:
   Triangulation<dim>        triangulation;
   DoFHandler<dim>           dof_handler;
   FESystem<dim>             fe;
-  // FE_Q<dim>                 fe;
   const unsigned int        n_refinements;
 
   DynamicSparsityPattern    dynamic_sparsity_pattern;
@@ -183,11 +181,11 @@ template <int dim>
 ElasticWaveEquation<dim>::ElasticWaveEquation()
 : dof_handler(triangulation)
 , fe(FE_Q<dim>(2))
-, n_refinements(5)
+, n_refinements(7)
 , csquared(1.0)
 // , k(1.0/(2.0*csquared*std::pow(2.0,n_refinements+1.0)))   // k < h/c = 2^(n_refine + 1)/c
 , k(1.0/64.0)
-, timesteps(100)
+, timesteps(200)
 {}
 
 /*----------------------------- Creates Grid ---------------------------------*/
@@ -234,13 +232,15 @@ void ElasticWaveEquation<dim>::initialise_system()
   // Initialises solution for u and v
   Solution_u.reinit(dof_handler.n_dofs());
   Solution_v.reinit(dof_handler.n_dofs());
+  ExactSolution<dim> ES;
+  ES.set_time(0.0);
   VectorTools::project(dof_handler,
                        constraints,
                        QGauss<dim>(fe.degree + 1),
-                       ExactSolution<dim>(),
+                       ES,
                        Solution_u);
   ExactSolutionDerivative<dim> ESD;
-  ESD.set_time(0.);
+  ESD.set_time(0.0);
   VectorTools::project(dof_handler,
                        constraints,
                        QGauss<dim>(fe.degree + 1),
@@ -260,9 +260,6 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   // Quadrature used
   QGauss<dim> quadrature(fe.degree + 1);
 
-  // for (unsigned int i = 1; i < timesteps; i++)
-  for (unsigned int i = 1; i < timesteps; i++)
-  {
   // Initialises the Mass and Laplace matrices
   MassMatrix.reinit(sparsity_pattern);
   LaplaceMatrix.reinit(sparsity_pattern);
@@ -273,6 +270,8 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
                                     QGauss<dim>(fe.degree + 1),
                                     LaplaceMatrix);
 
+  for (unsigned int i = 1; i < timesteps; i++)
+  {
   // Initialise: F(n) is F_new and F(n-1) is F_current
   F_current.reinit(dof_handler.n_dofs());
   F_new.reinit(dof_handler.n_dofs());
@@ -317,6 +316,7 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
                                            0,
                                            Boundary_u,
                                            Boundary_values);
+
   Solution_u_old = Solution_u;
   MatrixTools::apply_boundary_values(Boundary_values,
                                      LHS_Matrix_u,
@@ -339,8 +339,10 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   MassMatrix.vmult(RHS_v,Solution_v);
   LaplaceMatrix.vmult(RHS_v_Temp1,Solution_u);
   LaplaceMatrix.vmult(RHS_v_Temp2,Solution_u_old);
-  RHS_v.add(-csquared*k/2.0,RHS_v_Temp1,-csquared*k/2.0,Solution_u_old);
+  RHS_v.add(-csquared*k/2.0,RHS_v_Temp1,-csquared*k/2.0,RHS_v_Temp2);
   RHS_v.add(k/2.0,F_new,k/2.0,F_current);
+
+  LHS_Matrix_v.copy_from(MassMatrix);
 
   // Apply boundary conditions for du/dt
   BoundaryDerivative<dim> Boundary_v;
@@ -357,7 +359,7 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   // Now solve for v(n)
   // Solution_v_old = Solution_v;
   // Solution_v = 0;
-  solver.solve(MassMatrix,
+  solver.solve(LHS_Matrix_v,
                Solution_v,
                RHS_v,
                PreconditionIdentity());
