@@ -1,0 +1,69 @@
+\documentclass{article}
+\usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{lipsum}
+ 
+%--------------------------------------------------------%
+%-------------------- NEW COMMANDS ----------------------%
+%--------------------------------------------------------%
+
+\newcommand{\RR}{\mathbb{R}}				 % Reals
+\newcommand{\beps}{\bm{\varepsilon}} % Fast bold epsilon
+\newcommand{\eps}{\varepsilon}       % Fast epsilon
+\newcommand{\bsig}{\bm{\sigma}}      % Fast bold sigma
+\newcommand{\bphi}{\bm{\phi}}         % Fast bold phi
+%--------------------------------------------------------%
+% Keeps font the same when bolding %
+\newcommand\hmmax{0}
+\newcommand\bmmax{0}
+\usepackage{bm}
+%--------------------------------------------------------%
+% Keeps partials easy to write and regular d/dx upright
+\newcommand{\pd}{\partial}           % Partial symbol
+%\renewcommand{\d}[1]{\ensuremath{\operatorname{d}\!{#1}}}
+\newcommand{\dd}{\mathop{}\!\mathrm{d}}
+\newcommand{\D}{\mathop{}\!\mathrm{D}}
+%--------------------------------------------------------%
+
+
+\title{Math 762 Project}
+
+
+\author{
+  Sergio ~Ch\'{a}vez
+}
+
+%--------------------------------------------------------%
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\input{abstract.tex}
+\end{abstract}
+
+
+% keywords can be removed
+% \keywords{Elasticity}
+
+\section{Milestone 1: Create a Plane Wave}
+\input{subsection_milestone_1.tex}
+\section{Milestone 2: Goals}
+\input{subsection_introduction.tex}
+\section{Model}
+\input{subsection_background.tex}
+\input{subsection_linear_elasticity.tex}
+
+%--------------------------------------------------------%
+\bibliographystyle{unsrt}
+\bibliography{references}
+
+
+\end{document}

@@ -1,0 +1,70 @@
+\subsection{Derivation of set-up}
+Let the wave equation problem be given by
+\begin{equation}
+  \frac{\pd^2u}{\pd t^2} - c^2\Delta u = f(\bm{x}), \quad u(\bm{x},0) = u_0(\bm{x}), \quad u(\bm{x},t)\big|_{\pd\Omega} = 0,
+\end{equation}
+where $\Omega\subset\RR^d$; $d$ is the dimensino of space. First, the second-order differential equation must be turned into a system of first-order differential equations, so let $v=\dd u/\dd t$. Then introduce a test function $\phi(\bm{x})\in\RR^d$, followed by a multiplication on both sides of the wave equation and integrate on the domain
+\begin{eqnarray*}
+  \int_\Omega \phi(\bm{x})\frac{\pd v}{\pd t} - c^2\int_\Omega\phi(\bm{x})\Delta u & = & \int_\Omega \phi(\bm{x})f(\bm{x}), \\
+  \int_\Omega \phi(\bm{x})\frac{\pd u}{\pd t} & = & \int_\Omega \phi(\bm{x}) v.
+\end{eqnarray*}
+To simplify the notation, this will be switched to inner product notation and drop the arguments
+\begin{eqnarray*}
+  \bigg(\phi,\frac{\pd v}{\pd t}\bigg)_\Omega - c^2(\phi,\Delta u)_\Omega & = & (\phi,f)_\Omega, \\
+  \bigg(\phi,\frac{\pd u}{\pd t}\bigg)_\Omega & = & (\phi,v)_\Omega.
+\end{eqnarray*}
+By applying the divergence theorem to $(\phi,\Delta u)_\Omega$, the system can be transformed to
+\begin{eqnarray*}
+  \bigg(\phi,\frac{\pd v}{\pd t}\bigg)_\Omega - c^2(\phi,\nabla u)_{\pd\Omega} + c^2(\nabla\phi,\nabla u)_\Omega & = & (\phi,f)_\Omega, \\
+  \bigg(\phi,\frac{\pd u}{\pd t}\bigg)_\Omega & = & (\phi,v)_\Omega.
+\end{eqnarray*}
+The boundary term will be placed in the constraints class of the Deal.II code; so it can be dropped here. Now the finite element solution which is a linear combination of trial function is given by
+\begin{eqnarray*}
+  u_h(\bm{x}) = \sum^N_{i=1} \bar{u}_i\phi_i(\bm{x}), \quad\quad v_h(\bm{x}) = \sum^N_{i=1} \bar{v}_i\phi_i(\bm{x})
+\end{eqnarray*}
+For now, the space of trial functions and test functions are the same. Therefore, for each test function $\bphi_i$
+\begin{eqnarray*}
+  \bigg(\phi_i,\sum^N_{j=1}\frac{\pd\bar{u}_j}{\pd t}\phi_j\bigg)_\Omega + c^2\bigg(\nabla\phi_i,\sum^N_{j=1}\bar{u}_j\nabla\phi_j\bigg)_\Omega & = & (\phi_i,f)_\Omega, \\
+  \bigg(\phi_i,\sum^N_{j=1}\frac{\pd\bar{u}_j}{\pd t}\phi_j\bigg)_\Omega & = & \bigg(\phi_i,\sum^N_{j=1}\bar{v}_j\phi_j\bigg)_\Omega.
+\end{eqnarray*}
+If a matrix $\bm{M}$ and $\bm{S}$ can be formed from the inner products of the test functions and the inner products of the gradients of the test functions, respectively. The coefficients of $\bar{u}_i$ can also be turned into a vector $\bm{U}$. Thus, the previous equation can then be simplified to
+\begin{eqnarray*}
+  \bm{M}\frac{\pd\bm{V}}{\pd t} + c^2\bm{S}\bm{U} & = & \bm{F}, \\
+  \bm{M}\frac{\pd\bm{U}}{\pd t} & = & \bm{M}\bm{V}.
+\end{eqnarray*}
+
+At this point, the time discretisation must be applied so the Crank-Nicholson scheme is used. Therefore,
+\begin{eqnarray*}
+  \bm{M}\frac{\bm{V}^{n+1} - \bm{V}^n}{\Delta x} & = & - \frac{c^2}{2}\bm{S}\big(\bm{U}^{n+1} + \bm{U}^n\big) + \frac{1}{2}\big(\bm{F}^{n+1} + \bm{F}^n\big), \\
+  \bm{M}\frac{\bm{U}^{n+1} - \bm{U}^n}{\Delta x} & = & \bm{M}\frac{1}{2}\big(\bm{V}^{n+1} + \bm{V}^n\big)
+\end{eqnarray*}
+Rearrange to obtain
+\begin{eqnarray}
+  \bm{M}\bm{V}^{n+1} & = & \bm{M}\bm{V}^n - \frac{c^2\Delta x}{2}\bm{S}\big(\bm{U}^{n+1} + \bm{U}^n\big) + \frac{\Delta x}{2}\big(\bm{F}^{n+1} + \bm{F}^n\big), \\
+  \bm{M}\bm{U}^{n+1} & = & \bm{M}\bm{U}^n + \frac{\Delta x}{2}\bm{M}\big(\bm{V}^{n+1} + \bm{V}^n\big). \nonumber
+\end{eqnarray}
+
+Lastly, to facilitate computations the first equation can be placed within the second one so that $U^{n+1}$ is found without need of $V^{n+1}$ and then $V^{n+1}$ can be found using the newfound $U^{n+1}$
+\begin{eqnarray*}
+  \bm{M}\bm{U}^{n+1} & = & \bm{M}\bm{U}^n + \frac{\Delta x}{2}\bigg(\bm{M}\bm{V}^n - \frac{c^2\Delta x}{2}\bm{S}\big(\bm{U}^{n+1} + \bm{U}^n\big)\bigg) \\
+  &  & \quad + \frac{\Delta x^2}{4}\big(\bm{F}^{n+1} + \bm{F}^n\big) + \frac{\Delta x}{2}\bm{M}\bm{V}^n,
+\end{eqnarray*}
+or
+\begin{eqnarray}
+  \bigg(\bm{M} + \frac{c^2\Delta x^2}{4}\bigg)\bm{U}^{n+1} = \bigg(\bm{M} - \frac{c^2\Delta x^2}{4}\bigg)\bm{U}^n + \Delta x\bm{M}\bm{V}^n + \frac{\Delta x^2}{4}\big(\bm{F}^{n+1} + \bm{F}^n\big).
+\end{eqnarray}
+
+\subsection{Implementation}
+To ensure that the method and code works an example is created based on the method of manufactured solution. Let the test solution be
+\begin{equation}
+  u(x,y,t) = \sin(x)\sin(y)\sin(t).
+\end{equation}
+under the domain $[0,2\pi]\times[0,2\pi]$. Therefore, through the method of manufactured solutions the problem with initial conditions and boundary conditions is given by
+\begin{eqnarray*}
+  \frac{\dd^2u}{\dd t^2} - \Delta u & = & \sin(x)\sin(y)\sin(t), \\
+  u(x,y,0) & = & 0, \\
+  \frac{\pd u}{\pd t}(x,y,0) & = & \sin(x)\sin(y), \\
+  u(x,t)\bigg|_{\pd\Omega} & = & 0.
+\end{eqnarray*}
+
+The code demonstrates this implementation.

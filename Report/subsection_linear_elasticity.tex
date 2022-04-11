@@ -1,0 +1,19 @@
+\subsection{Linear Elasticity}
+If the deformations are considered small, or \textit{infinitesimal}, then the linearised Green-Lagrange strain tensor tensor can be used
+\begin{equation}
+  \beps(\bm{u}) = \frac{1}{2}\big(\nabla\bm{u} + (\nabla\bm{u})^T\big).
+\end{equation}
+
+Hooke's law for isotropic materials has this general formula
+\begin{equation}
+  \mathbb{C}_{ijkl} = \lambda\delta_{ij}\delta_{kl} + \mu\big(\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk}\big).
+\end{equation}
+Once combined with (\ref{eq::Hookes_Law}), the stress tensor can be given by
+\begin{equation}
+  \sigma_{ij} = \mathbb{C}_{ijkl}\varepsilon_{kl} = \lambda(\varepsilon_{nn})\delta_{ij} + 2\mu\varepsilon_{ij},
+\end{equation}
+or
+\begin{equation}
+  \bsig = \lambda tr(\beps)\bm{I} + 2\mu\beps,
+\end{equation}
+where $\lambda$ and $\mu$ are Lam\'{e} constants, and more specifically, $\mu$ is the shear modulus \cite{landau86}.

@@ -1,0 +1,20 @@
+\subsection{Introduction}
+The ultimate goal of this project is to produce wave propagation through a hyperelastic material which can be given by the following hyperbolic equation
+\begin{equation}
+  \label{eq::Elastic_wave}
+  \frac{\pd^2 \bm{u}}{\pd t^2} - \nabla\cdot \bsig = \bm{b}.
+\end{equation}
+The details of this equation will be explained further below.
+
+The example for the first milestone uses an implicit method to solve the time step integration but for the elastic model an explicit method will be used to facilitate a generalisation for any hyperelastic model. A first-stage Runge-Kutta explicit method will be used
+\begin{eqnarray*}
+  U^* & = & U^n + f(U^n,t_n), \\
+  U^{n+1} & = & U^n + f(U^*,t_n+k/2).
+\end{eqnarray*}
+Transforming the equation (\ref{eq::Elastic_wave}) into a system of first-order differential equations so to use the Runge-Kutta method gives
+\begin{eqnarray*}
+  \frac{\pd \bm{u}}{\pd t} & = & \bm{v}, \\
+  \frac{\pd \bm{v}}{\pd t} & = & \nabla\cdot\bsig + \bm{f}.
+\end{eqnarray*}
+
+The stress tensor will be determined by the hyperelastic material, which should be left general so that it can be accustomed to the necessary problem. 

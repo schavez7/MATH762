@@ -1,0 +1,22 @@
+\subsection{Background}
+Let $\Omega$ be a region of the $n$th-dimensional real set. The region $\Omega$ will be considered a continuous mass; therefore, a point in $\Omega$ will be considered a mass particle. Though, not to confuse this particle with those of quantum physics, but rather as just a point with mass. Let $\bm{X}$ be the coordinates of a point in $\Omega$. These coordinates do not change based on time; they are the coordinates of a point at an initial time which will be given the name \textit{material coordinates}. As the mass particle moves away from its initial position for a certain amount of time $t$, the mapping $\varphi_t(\bm{X})$ will give the new coordinates of the mass particle, or \textit{spatial coordinates}, $\bm{x}$. As time progresses, the view of the movement is viewed from the reference of the material coordinates. This approach is known as the \textit{Lagrangian reference frame}.
+
+After a given time $t$, a displacement field can be produced of all particles in the region
+\begin{equation}
+  \bm{u}(\bm{X},t) = \bm{x}(\bm{X},t) - \bm{X}.
+\end{equation}
+A derivative with respect to the material coordinates gives the \textit{displacement gradient}
+\begin{equation}
+  \frac{\pd\bm{u}}{\pd\bm{X}} = \frac{\pd\bm{x}}{\pd\bm{X}} - \bm{I},
+\end{equation}
+but a simple rearrangement also produces the \textit{deformation gradient tensor}
+\begin{equation}
+  \bm{F} = \frac{\pd\bm{x}}{\pd\bm{X}} = \frac{\pd\bm{u}}{\pd\bm{X}} + \bm{I}.
+\end{equation}
+
+The stress-strain relationship according to Hooke's law gives
+\begin{equation}
+  \label{eq::Hookes_Law}
+  \bsig = \mathbb{C}:\beps,
+\end{equation}
+where $\mathbb{C}$ is a fourth-order elastic tensor.
