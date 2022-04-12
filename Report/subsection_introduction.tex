@@ -14,7 +14,7 @@ The example for the first milestone uses an implicit method to solve the time st
 Transforming the equation (\ref{eq::Elastic_wave}) into a system of first-order differential equations so to use the Runge-Kutta method gives
 \begin{eqnarray*}
   \frac{\pd \bm{u}}{\pd t} & = & \bm{v}, \\
-  \frac{\pd \bm{v}}{\pd t} & = & \nabla\cdot\bsig + \bm{f}.
+  \frac{\pd \bm{v}}{\pd t} & = & \nabla\cdot\bsig + \bm{f}, \\
+  \frac{\pd \bsig}{\pd t} & = & \bm{h}(\bm{v},t),
 \end{eqnarray*}
-
-The stress tensor will be determined by the hyperelastic material, which should be left general so that it can be accustomed to the necessary problem. 
+where $\bm{h}$ is the derivative of the hyperelastic material model with respect to time and space. In this way, the stress tensor is left general based on the model chosen.
