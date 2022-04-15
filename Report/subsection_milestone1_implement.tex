@@ -1,0 +1,14 @@
+\subsection{Implementation}
+To ensure that the method and code works an example is created based on the method of manufactured solution. Let the test solution be
+\begin{equation}
+  u(x,y,t) = \sin(x)\sin(y)\sin(t).
+\end{equation}
+under the domain $[0,2\pi]\times[0,2\pi]$. Therefore, through the method of manufactured solutions the problem with initial conditions and boundary conditions is given by
+\begin{eqnarray*}
+  \frac{\dd^2u}{\dd t^2} - \Delta u & = & \sin(x)\sin(y)\sin(t), \\
+  u(x,y,0) & = & 0, \\
+  \frac{\pd u}{\pd t}(x,y,0) & = & \sin(x)\sin(y), \\
+  u(x,t)\bigg|_{\pd\Omega} & = & 0.
+\end{eqnarray*}
+
+The code demonstrates this implementation.

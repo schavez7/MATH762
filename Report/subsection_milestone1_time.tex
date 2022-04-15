@@ -1,0 +1,38 @@
+\subsection{Time Integration}
+After the space grid has been created using continuous Galerkin method a time integrator must be applied. For the sake of stability, the original fourth-order Runge-Kutta method will be used
+\begin{eqnarray*}
+  \bm{k}_1 & = & \bm{f}\big(\bm{X}^n,t_n\big), \\
+  \bm{k}_2 & = & \bm{f}\bigg(\bm{X}^n + \frac{h}{2}\bm{k}_1, t_n + \frac{h}{2}\bigg), \\
+  \bm{k}_3 & = & \bm{f}\bigg(\bm{X}^n + \frac{h}{2}\bm{k}_2, t_n + \frac{h}{2}\bigg), \\
+  \bm{k}_4 & = & \bm{f}\big(\bm{X}^n + h\bm{k}_3, t_n + h\big), \\
+  \bm{X}^{n+1} & = & \bm{X}^n + \frac{h}{6}\big(\bm{k}_1 + 2\bm{k}_2 + 2\bm{k}_3 + \bm{k}_4\big), \\
+  t_{n+1} & = & t_n + h.
+\end{eqnarray*}
+
+Based on the space formulation in (\ref{eq::space_formulation}), the solution has the form
+\begin{eqnarray*}
+  \frac{\pd \bm{U}}{\pd t} & = & \bm{V}, \\
+  \frac{\pd \bm{V}}{\pd t} & = & -\bm{M}^{-1}\bm{S}\bm{U} + \bm{M}^{-1}\bm{F},
+\end{eqnarray*}
+where the right-hand side of the differential equation is the function $\bm{f}$ used in the Runge-Kutta method.
+
+At this point, the time discretisation must be applied so the Crank-Nicholson scheme is used. Therefore,
+\begin{eqnarray*}
+  \bm{M}\frac{\bm{V}^{n+1} - \bm{V}^n}{\Delta x} & = & - \frac{c^2}{2}\bm{S}\big(\bm{U}^{n+1} + \bm{U}^n\big) + \frac{1}{2}\big(\bm{F}^{n+1} + \bm{F}^n\big), \\
+  \bm{M}\frac{\bm{U}^{n+1} - \bm{U}^n}{\Delta x} & = & \bm{M}\frac{1}{2}\big(\bm{V}^{n+1} + \bm{V}^n\big)
+\end{eqnarray*}
+Rearrange to obtain
+\begin{eqnarray}
+  \bm{M}\bm{V}^{n+1} & = & \bm{M}\bm{V}^n - \frac{c^2\Delta x}{2}\bm{S}\big(\bm{U}^{n+1} + \bm{U}^n\big) + \frac{\Delta x}{2}\big(\bm{F}^{n+1} + \bm{F}^n\big), \\
+  \bm{M}\bm{U}^{n+1} & = & \bm{M}\bm{U}^n + \frac{\Delta x}{2}\bm{M}\big(\bm{V}^{n+1} + \bm{V}^n\big). \nonumber
+\end{eqnarray}
+
+Lastly, to facilitate computations the first equation can be placed within the second one so that $U^{n+1}$ is found without need of $V^{n+1}$ and then $V^{n+1}$ can be found using the newfound $U^{n+1}$
+\begin{eqnarray*}
+  \bm{M}\bm{U}^{n+1} & = & \bm{M}\bm{U}^n + \frac{\Delta x}{2}\bigg(\bm{M}\bm{V}^n - \frac{c^2\Delta x}{2}\bm{S}\big(\bm{U}^{n+1} + \bm{U}^n\big)\bigg) \\
+  &  & \quad + \frac{\Delta x^2}{4}\big(\bm{F}^{n+1} + \bm{F}^n\big) + \frac{\Delta x}{2}\bm{M}\bm{V}^n,
+\end{eqnarray*}
+or
+\begin{eqnarray}
+  \bigg(\bm{M} + \frac{c^2\Delta x^2}{4}\bigg)\bm{U}^{n+1} = \bigg(\bm{M} - \frac{c^2\Delta x^2}{4}\bigg)\bm{U}^n + \Delta x\bm{M}\bm{V}^n + \frac{\Delta x^2}{4}\big(\bm{F}^{n+1} + \bm{F}^n\big).
+\end{eqnarray}
