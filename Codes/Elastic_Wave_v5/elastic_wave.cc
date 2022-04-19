@@ -1,7 +1,7 @@
 /*                            2D Wave equation                                */
-/*   Version 5: Has a fourth-order Runge-Kutta method applied. This version   */
-/*              attempts to find the convergence rate and afterward will      */
-/*              implement a vector valued output problem.                     */
+/*   Version 5: Has a fourth-order Runge-Kutta method applied with the        */
+/*              convergence rate output. Next step is to implement a vector   */
+/*              valued solution.                                              */
 
 
 // Must create triangulation and a grid
@@ -66,10 +66,10 @@ class ExactSolution : public Function<dim>
     virtual
     double value(const Point<dim> &p, unsigned int component = 0) const override
     {
-      // double t = this->get_time();
+      double t = this->get_time();
       (void)p;
       (void)component;
-      return 0.0;
+      return std::sin(p[0]) * std::sin(p[1]) * std::sin(t);
     }
 };
 
@@ -136,18 +136,19 @@ template <int dim>
 class ElasticWaveEquation
 {
 public:
-  ElasticWaveEquation();
-  void run();
+  ElasticWaveEquation(const unsigned int number_time_steps,
+                      const unsigned int n_refinements);
+  double run();
 private:
   void create_grid();
   void initialise_system();
   void assemble_nth_iteration();
+  void max_error(const unsigned int i);
   void graph(const unsigned int time_step);
 
   Triangulation<dim>        triangulation;
   DoFHandler<dim>           dof_handler;
   FESystem<dim>             fe;
-  const unsigned int        n_refinements;
 
   DynamicSparsityPattern    dynamic_sparsity_pattern;
   SparsityPattern           sparsity_pattern;
@@ -183,23 +184,27 @@ private:
   Vector<double>            RHS_u;
   Vector<double>            RHS_v;
 
+  Vector<double>            Errors_Iteration;
+
+  const unsigned int        n_refinements;
+  const unsigned int        number_time_steps;
   const double              cfl;
   const double              csquared;
   const double              h;
-  const unsigned int        timesteps;
 };
 
 /*------------------------------ Constructor ---------------------------------*/
 template <int dim>
-ElasticWaveEquation<dim>::ElasticWaveEquation()
+ElasticWaveEquation<dim>::ElasticWaveEquation(const unsigned int number_time_steps,
+                                              const unsigned int n_refinements)
 : dof_handler(triangulation)
 , fe(FE_Q<dim>(2))
-, n_refinements(5)
-, cfl(0.90)
+, n_refinements(n_refinements)
+, number_time_steps(number_time_steps)
+// , cfl(0.90)
+, cfl(1.0)
 , csquared(1.0)
-, h(cfl/(csquared*std::pow(2.0,n_refinements+1.0)))   // k < h/c = 2^(n_refine + 1)/c
-// , k(1.0/64.0)
-, timesteps(250)
+, h(cfl/(csquared*std::pow(2.0,n_refinements)))
 {}
 
 /*----------------------------- Creates Grid ---------------------------------*/
@@ -248,8 +253,8 @@ void ElasticWaveEquation<dim>::initialise_system()
                        Solution_v);
 
   // Creates a folder for data and plots the initial solution
-  system("mkdir Solution");
-  graph(0);
+  // system("mkdir Solution");
+  // graph(0);
 }
 
 /*---------------------------- Assemble System -------------------------------*/
@@ -270,8 +275,10 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
                                     QGauss<dim>(fe.degree + 1),
                                     LaplaceMatrix);
 
-  for (unsigned int i = 1; i < timesteps; i++)
-  // for (unsigned int i = 1; i < 2; i++)
+  // Max error at each iteration initialise
+  Errors_Iteration.reinit(number_time_steps-1);
+
+  for (unsigned int i = 1; i < number_time_steps; i++)
   {
   // Initialise: F(t) ~ F_n, F(t+h/2) ~ F_nh, F(t+h)
   F_n.reinit(dof_handler.n_dofs());
@@ -422,10 +429,34 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
                  RHS_v,
                  PreconditionIdentity());
 
-  graph(i);
-  std::cout << "Iteration " << i << std::endl;
-  std::cout << "at time " << (i-1)*h << std::endl;
+  // graph(i);
+  max_error(i);
+  // std::cout << "Iteration: " << i << std::endl;
+  // std::cout << "Time:  " << i*h << std::endl;
   } // end the forloop
+}
+
+/*--------------------------------- Error ------------------------------------*/
+template <int dim>
+void ElasticWaveEquation<dim>::max_error(const unsigned int i)
+{
+  // Compute the pointwise maximum error:
+  Vector<double> max_error_per_cell(triangulation.n_active_cells());
+    {
+      MappingQGeneric<dim> mapping(1);
+      ExactSolution<dim>   ES;
+      ES.set_time(i*h);
+      VectorTools::integrate_difference(mapping,
+                                        dof_handler,
+                                        Solution_u,
+                                        ES,
+                                        max_error_per_cell,
+                                        QIterated<dim>(QGauss<1>(2), 2),
+                                        VectorTools::NormType::Linfty_norm);
+      Errors_Iteration(i-1) = *std::max_element(max_error_per_cell.begin(),
+                                        max_error_per_cell.end());
+      // std::cout << "maximum error = " << Errors_Iteration(i-1) << std::endl;
+    }
 }
 
 /*--------------------------------- Graph ------------------------------------*/
@@ -444,12 +475,12 @@ void ElasticWaveEquation<dim>::graph(const unsigned int time_step)
 
 /*---------------------------------- Run -------------------------------------*/
 template <int dim>
-void ElasticWaveEquation<dim>::run()
+double ElasticWaveEquation<dim>::run()
 {
   create_grid();
-  // create_grid_out(0);
   initialise_system();
   assemble_nth_iteration();
+  return Errors_Iteration.linfty_norm();
 }
 
 /*----------------------------------------------------------------------------*/
@@ -457,6 +488,16 @@ void ElasticWaveEquation<dim>::run()
 /*----------------------------------------------------------------------------*/
 int main()
 {
-  ElasticWaveEquation<2> Wave;
-  Wave.run();
+  unsigned int number_time_steps(250);
+  unsigned int total_refinements(6);
+
+  Vector<double> All_Errors(total_refinements);
+
+  for (unsigned int k = 1; k < total_refinements; k++)
+  {
+    ElasticWaveEquation<2> Wave(number_time_steps,k);
+    All_Errors(k-1) = Wave.run();
+    std::cout << "Refinements: " << k << std::endl;
+    std::cout << "   Timestep " << 1/(std::pow(2.0,k)) << " with max error " << All_Errors(k-1) << std::endl;
+  }
 }
