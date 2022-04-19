@@ -63,11 +63,17 @@ Once $\bm{U}_{temp}$ and $\bm{V}_{temp}$ are found then all that is left is to s
 \end{eqnarray*}
 
 \subsection{Vector Valued Solutions}
-Since the end goal to to produce a displacement vector over time, the code needs to allow for vector valued outputs $\bm{u}(\bm{x},t)$ rather than the scalar $u(\bm{x},t)$. For now,
-
-Returning to the previous set up,
-\begin{eqnarray*}
-  \frac{\pd\bm{U}}{\pd t} & = & \bm{V}, \\
-  \frac{\pd\bm{V}}{\pd t} & = & -\bm{M}^{-1}\bm{SU} + \bm{M}^{-1}\bm{F},
-\end{eqnarray*}
-an equivalent, yet different, formulation can be used to facilitate
+Since the end goal to to produce a displacement vector over time, the code needs to allow for vector valued outputs $\bm{u}(\bm{x},t)$ rather than the scalar $u(\bm{x},t)$. For now, two wave equations will be solved at the same time giving a vector valued solution. Returning to the previous set up (\ref{eq::Numerical_ODE}) an equivalent, yet different, formulation can be used to facilitate computations
+% \begin{equation*}
+%   here
+%   % \begin{bmatrix}
+%   %   \pd\bm{U}_1/\pd t \\ \pd\bm{V}_1/\pd t \\ \pd\bm{U}_2/\pd t \\ \pd\bm{V}_2/\pd t
+%   % \end{bmatrix}
+%   % =j (here)  solution_names.emplace_back("pressure");
+%   % \begin{bmatrix}
+%   %   0 & \bm{I} & 0 & 0 \\
+%   %   \bm{M}^{-1} & 0 & 0 & 0 \\
+%   %   0 & 0 & 0 & \bm{I} \\
+%   %   0 & 0 & 0 \bm{M}^{-1} & 0
+%   % \end{bmatrix}
+% \end{equation*}
