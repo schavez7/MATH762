@@ -1,0 +1,55 @@
+\subsection{Runge-Kutta Formulation}
+Based on this forth-order Runge-Kutta, the evolution formula becomes\footnote{This was found using Mathematica. The Mathematica code is attached that demonstrates this formulation.}
+\begin{eqnarray*}
+  \bm{U}^{n+1} & = & \bm{U}^n - \frac{h^2}{2}\bm{M}^{-1}\bm{SU}^n + \frac{h^4}{24}\bm{M}^{-1}\bm{S}\bm{M}^{-1}\bm{SU}^n + h\bm{V}^n - \frac{h^3}{6}\bm{M}^{-1}\bm{SV}^n \\
+  & & \quad + \frac{h^2}{6}\bm{M}^{-1}\bm{F}^n + \frac{h^2}{3}\bm{M}^{-1}\bm{F}^{n+1/2} - \frac{h^4}{24}\bm{M}^{-1}\bm{S}\bm{M}^{-1}\bm{F}^n, \\
+  \bm{V}^{n+1} & = & \bm{V}^n - \frac{h^2}{2}\bm{M}^{-1}\bm{SV}^n + \frac{h^4}{24}\bm{M}^{-1}\bm{S}\bm{M}^{-1}\bm{SV}^n - h\bm{M}^{-1}\bm{SU}^n + \frac{h^3}{6}\bm{M}^{-1}\bm{S}\bm{M}^{-1}\bm{SU}^n \\
+  & & \quad \frac{h}{6}\bm{M}^{-1}\bm{F}^n + \frac{2h}{3}\bm{M}^{-1}\bm{F}^{n+1/2} + \frac{h}{6}\bm{M}^{-1}\bm{F}^{n+1} + \frac{h^3}{12}\bm{M}^{-1}\bm{S}\bm{M}^{-1}\bm{F}^n - \frac{h^3}{12}\bm{M}^{-1}\bm{S}\bm{M}^{-1}\bm{F}^{n+1/2}.
+\end{eqnarray*}
+In order to go around working with inverse matrices, some algebraic manipulation is necessary. First left multiply the last two equations by $\bm{M}$
+\begin{eqnarray*}
+  \bm{MU}^{n+1} & = & \bm{MU}^n - \frac{h^2}{2}\bm{SU}^n + \frac{h^4}{24}\bm{S}\bm{M}^{-1}\bm{SU}^n + h\bm{MV}^n - \frac{h^3}{6}\bm{SV}^n \\
+  & & \quad + \frac{h^2}{6}\bm{F}^n + \frac{h^2}{3}\bm{F}^{n+1/2} - \frac{h^4}{24}\bm{S}\bm{M}^{-1}\bm{F}^n, \\
+  \bm{MV}^{n+1} & = & \bm{MV}^n - \frac{h^2}{2}\bm{SV}^n + \frac{h^4}{24}\bm{S}\bm{M}^{-1}\bm{SV}^n - h\bm{SU}^n + \frac{h^3}{6}\bm{S}\bm{M}^{-1}\bm{SU}^n \\
+  & & \quad \frac{h}{6}\bm{F}^n + \frac{2h}{3}\bm{F}^{n+1/2} + \frac{h}{6}\bm{F}^{n+1} + \frac{h^3}{12}\bm{S}\bm{M}^{-1}\bm{F}^n - \frac{h^3}{12}\bm{S}\bm{M}^{-1}\bm{F}^{n+1/2}.
+\end{eqnarray*}
+Then let $R_U$ and $R_V$ be the sum of the right-hand sides terms' whose components are known
+\begin{eqnarray*}
+  \bm{R}_U & = & \bigg(\bm{M}-\frac{h^2}{2}\bm{S}\bigg)\bm{U}^n + h\bigg(\bm{M}-\frac{h^2}{6}\bm{S}\bigg)\bm{V}^n + \frac{h^2}{6}\bigg(\bm{F}^n+2*\bm{F}^{n+1/2}\bigg), \\
+  \bm{R}_V  & = & \bigg(\bm{M}-\frac{h^2}{2}\bm{S}\bigg)\bm{V}^n - h\bm{SU}^n + \frac{h}{6}\bigg(\bm{F}^n+4h\bm{F}^{n+1/2}+\bm{F}^{n+1}\bigg).
+\end{eqnarray*}
+Those terms that contain inverse matrices not known, or rather, not wanting to compute, can we substituted for a temporary variable
+\begin{eqnarray*}
+  \bm{W}^n & = & \frac{h^4}{24}(\bm{SU}^n - \bm{F}^n), \\
+  \bm{Z}^n & = & \frac{h^3}{24}(\bm{SV}^n + 4\bm{SU}^n + 2\bm{F}^n - 2\bm{F}^{n+1/2}).
+\end{eqnarray*}
+By these substitutions, a method for solving for the unknowns can be made by solving linear systems of equations. As it stands now
+\begin{eqnarray*}
+  \bm{MU}^{n+1} & = & \bm{R}_U + \bm{SM}^{-1}\bm{W}^n, \\
+  \bm{MV}^{n+1} & = & \bm{R}_V + \bm{SM}^{-1}\bm{V}^n.
+\end{eqnarray*}
+A rearrangement produces those linear systems of equations
+\begin{eqnarray*}
+  \bm{M}\bm{U}_{temp} & = & \bm{W}^n, \\
+  \bm{M}\bm{V}_{temp} & = & \bm{Z}^n,
+\end{eqnarray*}
+where
+\begin{eqnarray*}
+  \bm{U}_{temp} & = & \bm{S}^{-1}\bm{MU}^{n+1} - \bm{S}^{-1}\bm{R}_U, \\
+  \bm{V}_{temp} & = & \bm{S}^{-1}\bm{MV}^{n+1} - \bm{S}^{-1}\bm{R}_V.
+\end{eqnarray*}
+Once $\bm{U}_{temp}$ and $\bm{V}_{temp}$ are found then all that is left is to solve these systems of equations
+\begin{eqnarray*}
+  \bm{MU}^{n+1} & = & \bm{R}_U + \bm{SU}_{temp}, \\
+  \bm{MV}^{n+1} & = & \bm{R}_V + \bm{SV}_{temp}.
+\end{eqnarray*}
+
+\subsection{Vector Valued Solutions}
+Since the end goal to to produce a displacement vector over time, the code needs to allow for vector valued outputs $\bm{u}(\bm{x},t)$ rather than the scalar $u(\bm{x},t)$. For now, 
+
+Returning to the previous set up,
+\begin{eqnarray*}
+  \frac{\pd\bm{U}}{\pd t} & = & \bm{V}, \\
+  \frac{\pd\bm{V}}{\pd t} & = & -\bm{M}^{-1}\bm{SU} + \bm{M}^{-1}\bm{F},
+\end{eqnarray*}
+an equivalent, yet different, formulation can be used to facilitate
