@@ -43,3 +43,13 @@ Once $\bm{U}_{temp}$ and $\bm{V}_{temp}$ are found then all that is left is to s
   \bm{MU}^{n+1} & = & \bm{R}_U + \bm{SU}_{temp}, \\
   \bm{MV}^{n+1} & = & \bm{R}_V + \bm{SV}_{temp}.
 \end{eqnarray*}
+
+\subsection{Vector Valued Solutions}
+Since the end goal to to produce a displacement vector over time, the code needs to allow for vector valued outputs $\bm{u}(\bm{x},t)$ rather than the scalar $u(\bm{x},t)$. For now, 
+
+Returning to the previous set up,
+\begin{eqnarray*}
+  \frac{\pd\bm{U}}{\pd t} & = & \bm{V}, \\
+  \frac{\pd\bm{V}}{\pd t} & = & -\bm{M}^{-1}\bm{SU} + \bm{M}^{-1}\bm{F},
+\end{eqnarray*}
+an equivalent, yet different, formulation can be used to facilitate
