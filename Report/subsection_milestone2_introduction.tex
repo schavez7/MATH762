@@ -1,0 +1,7 @@
+\subsection{Introduction}
+The ultimate goal of this project is to produce wave propagation through a hyperelastic material which can be given by the following hyperbolic equation
+\begin{equation}
+  \label{eq::Elastic_wave}
+  \frac{\pd^2 \bm{u}}{\pd t^2} - \nabla\cdot \bm{P} = \bm{b}.
+\end{equation}
+A few key differences that need to be adjusted before a proper elastic wave model may be implemented. The current wave problem outputs a scalar value for $u(\bm{x},t)$, and the elastic wave will produce a vector output $\bm{u}(\bm{x},t)$ where its components are the displacement in each direction. To tackle this issue the code will be expanded to solve for multiple scalar wave equations at the same time producing a vector valued output. The second issue is that the Runge-Kutta formulation above won't work for a nonlinear function $\nabla\cdot\bm{P}(\bm{x},t)$ instead will be switch to linear solving at each $k_i$ in the Runge-Kutta method. The details of this equation will be explained further below.
