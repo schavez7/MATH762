@@ -1,5 +1,5 @@
 /*                            2D Wave equation                                */
-/*   Version 7: New Runge-Kutta is complete. Next need the elastic problem.   */
+/*   Version 8: Goal is to implement an elastic model.                        */
 
 
 // Must create triangulation and a grid
@@ -153,7 +153,7 @@ private:
   void initialise_system();
   void apply_model(Vector<double> & result, const Vector<double> & displacement);
   void apply_boundaries(SparseMatrix<double> &LHS,Vector<double> &Solution,
-                        Vector<double> &RHS,double time);
+                        Vector<double> &RHS,double time,std::string Case);
   void assemble_nth_iteration();
   void max_error(const unsigned int i);
   void graph(const unsigned int time_step);
@@ -218,7 +218,7 @@ ElasticWaveEquation<dim>::ElasticWaveEquation(const unsigned int number_time_ste
 , fe(FE_Q<dim>(2),dim)
 , n_refinements(n_refinements)
 , number_time_steps(number_time_steps)
-, cfl(0.90)
+, cfl(0.5)
 , csquared(1.0)
 , h(cfl/(csquared*std::pow(2.0,n_refinements)))
 , material_model(material_model)
@@ -347,22 +347,39 @@ template <int dim>
 void ElasticWaveEquation<dim>::apply_boundaries(SparseMatrix<double> &LHS,
                                                 Vector<double> &Solution,
                                                 Vector<double> &RHS,
-                                                double time)
+                                                double time,
+                                                std::string Case)
 {
   // Boundary constraints
-  ExactSolution<dim>           Boundary;
-  ExactSolutionDerivative<dim> Boundary_Derivative;
-  std::map<types::global_dof_index,double> Boundary_Derivative_values;
-
-  Boundary_Derivative.set_time(time*h);
-  VectorTools::interpolate_boundary_values(dof_handler,
-                                           0,
-                                           Boundary_Derivative,
-                                           Boundary_Derivative_values);
-  MatrixTools::apply_boundary_values(Boundary_Derivative_values,
+  if (Case == "boundary")
+  {
+    ExactSolution<dim> Boundary;
+    std::map<types::global_dof_index,double> Boundary_values;
+    Boundary.set_time(time*h);
+    VectorTools::interpolate_boundary_values(dof_handler,
+                                             0,
+                                             Boundary,
+                                             Boundary_values);
+    MatrixTools::apply_boundary_values(Boundary_values,
                                      LHS,
                                      Solution,
                                      RHS);
+  }
+  if (Case == "boundary_derivative")
+  {
+    ExactSolutionDerivative<dim> Boundary_Derivative;
+    std::map<types::global_dof_index,double> Boundary_Derivative_values;
+    Boundary_Derivative.set_time(time*h);
+    VectorTools::interpolate_boundary_values(dof_handler,
+                                             0,
+                                             Boundary_Derivative,
+                                             Boundary_Derivative_values);
+    MatrixTools::apply_boundary_values(Boundary_Derivative_values,
+                                       LHS,
+                                       Solution,
+                                       RHS);
+  }
+
 
   // Solve system
   SolverControl solver_stuff(1000, 1e-8 * RHS.l2_norm());
@@ -398,7 +415,7 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   F_nh.reinit(dof_handler.n_dofs());
   F_np.reinit(dof_handler.n_dofs());
   ForcingFunction<dim> forcing_function;
-  forcing_function.set_time((i-1)*h);
+  forcing_function.set_time((i-1.0)*h);
   VectorTools::create_right_hand_side(dof_handler,
                                       QGauss<dim>(fe.degree + 1),
                                       forcing_function,
@@ -417,39 +434,44 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   // Vectors and Matrices needed. This notation comes from the report
   Vector<double> K11;
   Vector<double> K12;
+  Vector<double> K11_temp;
   Vector<double> K12_temp;
   Vector<double> K21;
   Vector<double> K22;
+  Vector<double> K21_temp;
   Vector<double> K22_temp;
   Vector<double> K31;
   Vector<double> K32;
+  Vector<double> K31_temp;
   Vector<double> K32_temp;
   Vector<double> K41;
   Vector<double> K42;
+  Vector<double> K41_temp;
   Vector<double> K42_temp;
   Vector<double> temp;
 
   K11.reinit(dof_handler.n_dofs());
   K12.reinit(dof_handler.n_dofs());
+  K11_temp.reinit(dof_handler.n_dofs());
   K12_temp.reinit(dof_handler.n_dofs());
   K21.reinit(dof_handler.n_dofs());
   K22.reinit(dof_handler.n_dofs());
+  K21_temp.reinit(dof_handler.n_dofs());
   K22_temp.reinit(dof_handler.n_dofs());
   K31.reinit(dof_handler.n_dofs());
   K32.reinit(dof_handler.n_dofs());
-  K32_temp.reinit(dof_handler.n_dofs());
-  K31.reinit(dof_handler.n_dofs());
-  K32.reinit(dof_handler.n_dofs());
+  K31_temp.reinit(dof_handler.n_dofs());
   K32_temp.reinit(dof_handler.n_dofs());
   K41.reinit(dof_handler.n_dofs());
   K42.reinit(dof_handler.n_dofs());
+  K41_temp.reinit(dof_handler.n_dofs());
   K42_temp.reinit(dof_handler.n_dofs());
   temp.reinit(dof_handler.n_dofs());
   SparseMatrix<double> LHS_Matrix;
 
 
   /* --- First stage ---*/
-  K11 += Solution_v;
+  MassMatrix.vmult(K11_temp,Solution_v);
   apply_model(K12_temp,Solution_u);
   K12_temp *= -1.0;
   K12_temp += F_n;
@@ -457,11 +479,13 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   LHS_Matrix.reinit(sparsity_pattern);
   LHS_Matrix.copy_from(MassMatrix);
 
-  apply_boundaries(LHS_Matrix,K12,K12_temp,i-1.0);
+  apply_boundaries(LHS_Matrix,K11,K11_temp,i-1.0,"boundary");
+  apply_boundaries(LHS_Matrix,K12,K12_temp,i-1.0,"boundary_derivative");
 
   /* --- Second Stage --- */
-  K21 += Solution_v;
-  K21.add(0.5*h,K12);
+  temp += Solution_v;
+  temp.add(0.5*h,K12);
+  MassMatrix.vmult(K21_temp,temp);
   temp.reinit(dof_handler.n_dofs());
   temp += Solution_u;
   temp.add(0.5*h,K11);
@@ -472,11 +496,14 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   LHS_Matrix.reinit(sparsity_pattern);
   LHS_Matrix.copy_from(MassMatrix);
 
-  apply_boundaries(LHS_Matrix,K22,K22_temp,i-0.5);
+  apply_boundaries(LHS_Matrix,K21,K21_temp,i-0.5,"boundary");
+  apply_boundaries(LHS_Matrix,K22,K22_temp,i-0.5,"boundary_derivative");
 
   /* --- Third Stage --- */
-  K31 += Solution_v;
-  K31.add(0.5*h,K22);
+  temp.reinit(dof_handler.n_dofs());
+  temp += Solution_v;
+  temp.add(0.5*h,K22);
+  MassMatrix.vmult(K31_temp,temp);
   temp.reinit(dof_handler.n_dofs());
   temp += Solution_u;
   temp.add(0.5*h,K21);
@@ -487,11 +514,14 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   LHS_Matrix.reinit(sparsity_pattern);
   LHS_Matrix.copy_from(MassMatrix);
 
-  apply_boundaries(LHS_Matrix,K32,K32_temp,i-0.5);
+  apply_boundaries(LHS_Matrix,K31,K31_temp,i-0.5,"boundary");
+  apply_boundaries(LHS_Matrix,K32,K32_temp,i-0.5,"boundary_derivative");
 
   /* --- Fourth Stage --- */
-  K41 += Solution_v;
-  K41.add(h,K32);
+  temp.reinit(dof_handler.n_dofs());
+  temp += Solution_v;
+  temp.add(h,K32);
+  MassMatrix.vmult(K41_temp,temp);
   temp.reinit(dof_handler.n_dofs());
   temp += Solution_u;
   temp.add(h,K31);
@@ -502,21 +532,22 @@ void ElasticWaveEquation<dim>::assemble_nth_iteration()
   LHS_Matrix.reinit(sparsity_pattern);
   LHS_Matrix.copy_from(MassMatrix);
 
-  apply_boundaries(LHS_Matrix,K42,K42_temp,i-0.0);
+  apply_boundaries(LHS_Matrix,K41,K41_temp,i,"boundary");
+  apply_boundaries(LHS_Matrix,K42,K42_temp,i,"boundary_derivative");
 
   /* --- Runge-Kutta Evolution --- */
   temp.reinit(dof_handler.n_dofs());
-  temp.add(1.0,K11,2.0,K21);
-  temp.add(2.0,K31,1.0,K41);
-  temp *= (h/6.0);
+  temp.add(h,K11,2*h,K21);
+  temp.add(2*h,K31,h,K41);
+  temp /= 6.0;
   temp += Solution_u;
   Solution_u.reinit(dof_handler.n_dofs());
   Solution_u = temp;
 
   temp.reinit(dof_handler.n_dofs());
-  temp.add(1.0,K12,2.0,K22);
-  temp.add(2.0,K32,1.0,K42);
-  temp *= (h/6.0);
+  temp.add(h,K12,2*h,K22);
+  temp.add(2*h,K32,h,K42);
+  temp /= 6.0;
   temp += Solution_v;
   Solution_v.reinit(dof_handler.n_dofs());
   Solution_v = temp;
@@ -587,7 +618,7 @@ double ElasticWaveEquation<dim>::run()
 /*----------------------------------------------------------------------------*/
 int main()
 {
-  unsigned int number_time_steps(2);
+  unsigned int number_time_steps(100);
   unsigned int total_refinements(4);
   std::string   material_model = "wave_laplace_hard";
 
@@ -598,6 +629,8 @@ int main()
     ElasticWaveEquation<2> Wave(number_time_steps,k,material_model);
     All_Errors(k-1) = Wave.run();
     std::cout << "Refinements: " << k << std::endl;
-    std::cout << "   Timestep " << 0.9/(std::pow(2.0,k)) << " with max error " << All_Errors(k-1) << std::endl;
+    std::cout << "   Timestep " << 0.5/(std::pow(2.0,k)) << std::endl
+              << "   Gridstep " << 1.0/(std::pow(2.0,k)) << std::endl
+              << "   with max error " << All_Errors(k-1) << std::endl;
   }
 }
