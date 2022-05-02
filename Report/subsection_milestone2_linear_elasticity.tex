@@ -1,19 +1,22 @@
-\subsection{Linear Elasticity (to be omitted maybe)}
+\subsection{Linear Elasticity}
 If the deformations are considered small, or \textit{infinitesimal}, then the linearised Green-Lagrange strain tensor tensor can be used
-\begin{equation}
+\begin{equation*}
   \beps(\bm{u}) = \frac{1}{2}\big(\nabla\bm{u} + (\nabla\bm{u})^T\big).
-\end{equation}
+\end{equation*}
 
 Hooke's law for isotropic materials has this general formula
-\begin{equation}
+\begin{equation*}
   \mathbb{C}_{ijkl} = \lambda\delta_{ij}\delta_{kl} + \mu\big(\delta_{ik}\delta_{jl} + \delta_{il}\delta_{jk}\big).
-\end{equation}
+\end{equation*}
 Once combined with (\ref{eq::Hookes_Law}), the stress tensor can be given by
-\begin{equation}
+\begin{equation*}
   \sigma_{ij} = \mathbb{C}_{ijkl}\varepsilon_{kl} = \lambda(\varepsilon_{nn})\delta_{ij} + 2\mu\varepsilon_{ij},
-\end{equation}
+\end{equation*}
 or
-\begin{equation}
+\begin{equation*}
   \bsig = \lambda tr(\beps)\bm{I} + 2\mu\beps,
-\end{equation}
-where $\lambda$ and $\mu$ are Lam\'{e} constants, and more specifically, $\mu$ is the shear modulus \cite{landau86}.
+\end{equation*}
+where $\lambda$ and $\mu$ are Lam\'{e} constants, and more specifically, $\mu$ is the shear modulus. 
+
+\subsection{Implementation}
+The final result is this linear elastic problem. The initial condition is the medium in an undeformed state with boundaries set to zero except for a small area on the left boundary between $\pi/2 < x_2 < 3\pi/2$ at a constant deformation for a brief amount of time. This is to simulate an object hitting the medium on the side and seeing what happens. The parameters $\lambda$ and $\mu$ are both set to 1.

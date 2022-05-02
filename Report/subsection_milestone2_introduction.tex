@@ -1,7 +1,13 @@
-\subsection{Introduction}
 The ultimate goal of this project is to produce wave propagation through a hyperelastic material which can be given by the following hyperbolic equation
 \begin{equation}
   \label{eq::Elastic_wave}
-  \frac{\pd^2 \bm{u}}{\pd t^2} - \nabla\cdot \bm{P} = \bm{b}.
+  \frac{\pd^2 \bm{u}}{\pd t^2} - \nabla\cdot \bsig = \bm{b}.
 \end{equation}
-A few key differences that need to be adjusted before a proper elastic wave model may be implemented. The current wave problem outputs a scalar value for $u(\bm{x},t)$, and the elastic wave will produce a vector output $\bm{u}(\bm{x},t)$ where its components are the displacement in each direction. To tackle this issue the code will be expanded to solve for multiple scalar wave equations at the same time producing a vector valued output. The second issue is that the Runge-Kutta formulation above won't work for a nonlinear function $\nabla\cdot\bm{P}(\bm{x},t)$ instead will be switch to linear solving at each $k_i$ in the Runge-Kutta method. The details of this equation will be explained further below.
+
+By solving two wave equations at the same time, the code can then be adjusted nicely to incorporate problem with vector valued solutions such as the elastic problem above. In addition, the Runge-Kutta has been modified to allow for non-linear problems by changing the formulation in (\ref{eq::Numerical_ODE}) to
+\begin{eqnarray}
+  \label{eq::Numerical_ODE_New}
+  \frac{\pd \bm{U}}{\pd t} & = & \bm{V}, \nonumber \\
+  \frac{\pd \bm{V}}{\pd t} & = & -\bm{M}^{-1}\bm{h}(\bm{U}) + \bm{M}^{-1}\bm{F},
+\end{eqnarray}
+where $\bm{h}$ takes care of the non-linear components. Using this formulation the Runge-Kutta needs to be solved at each stage of the method (i.e. solve for each $\bm{k}_i$).

@@ -1,14 +1,26 @@
 \subsection{Implementation}
-To ensure that the method and code works an example is created based on the method of manufactured solution. Let the test solution be
+To ensure that the theory and code works an example is created based on the method of manufactured solution. In addition, two wave equations will be solved at the same time by turning the scalar valued solution into a vector valued solution. Therefore, the test solution is given by
 \begin{equation}
-  u(x,y,t) = \sin(x)\sin(y)\sin(t).
+  \bm{u}(\bm{x},t) =
+  \begin{bmatrix}
+    \sin(x_1)\sin(x_2)\sin(t) \\
+    \sin(2x_1)\sin(2x_2)\sin(2t)
+  \end{bmatrix},
 \end{equation}
 under the domain $[0,2\pi]\times[0,2\pi]$. Therefore, through the method of manufactured solutions the problem with initial conditions and boundary conditions is given by
 \begin{eqnarray*}
-  \frac{\dd^2u}{\dd t^2} - \Delta u & = & \sin(x)\sin(y)\sin(t), \\
-  u(x,y,0) & = & 0, \\
-  \frac{\pd u}{\pd t}(x,y,0) & = & \sin(x)\sin(y), \\
-  u(x,t)\bigg|_{\pd\Omega} & = & 0.
+  \frac{\dd^2\bm{u}}{\dd t^2} - \Delta \bm{u} & = &
+  \begin{bmatrix}
+    \sin(x_1)\sin(x_2)\sin(t) \\
+    4\sin(2x_2)\sin(2x_2)\sin(2t)
+  \end{bmatrix} \\
+  \bm{u}(\bm{x},0) & = & \bm{0}, \\
+  \frac{\pd \bm{u}}{\pd t}(\bm{x},0) & = &
+  \begin{bmatrix}
+    \sin(x_1)\sin(x_2) \\
+    2\sin(2x_1)\sin(2x_2)
+  \end{bmatrix} \\
+  \bm{u}(\bm{x},t)\bigg|_{\pd\Omega} & = & \bm{0}.
 \end{eqnarray*}
 
 The code demonstrates this implementation.
